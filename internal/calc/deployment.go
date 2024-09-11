@@ -22,8 +22,10 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 
 	if *replicas == 0 {
 		return &ResourceUsage{
-			CPU:    new(resource.Quantity),
-			Memory: new(resource.Quantity),
+			CpuMin:    new(resource.Quantity),
+			CpuMax:    new(resource.Quantity),
+			MemoryMin: new(resource.Quantity),
+			MemoryMax: new(resource.Quantity),
 			Details: Details{
 				Version:     deployment.APIVersion,
 				Kind:        deployment.Kind,
@@ -90,16 +92,23 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 		return nil, fmt.Errorf("deployment: %s deployment strategy %q is unknown", deployment.Name, strategy.Type)
 	}
 
-	cpu, memory := podResources(&deployment.Spec.Template.Spec)
+	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&deployment.Spec.Template.Spec)
 
-	mem := float64(memory.Value()) * float64(*replicas) * resourceOverhead
-	memory.Set(int64(math.Round(mem)))
+	memMin := float64(memoryMin.Value()) * float64(*replicas) * resourceOverhead
+	memoryMin.Set(int64(math.Round(memMin)))
 
-	cpu.SetMilli(int64(math.Round(float64(cpu.MilliValue()) * float64(*replicas) * resourceOverhead)))
+	memMax := float64(memoryMax.Value()) * float64(*replicas) * resourceOverhead
+	memoryMax.Set(int64(math.Round(memMax)))
+
+	cpuMin.SetMilli(int64(math.Round(float64(cpuMin.MilliValue()) * float64(*replicas) * resourceOverhead)))
+
+	cpuMax.SetMilli(int64(math.Round(float64(cpuMax.MilliValue()) * float64(*replicas) * resourceOverhead)))
 
 	resourceUsage := ResourceUsage{
-		CPU:    cpu,
-		Memory: memory,
+		CpuMin:    cpuMin,
+		CpuMax:    cpuMax,
+		MemoryMin: memoryMin,
+		MemoryMax: memoryMax,
 		Details: Details{
 			Version:     deployment.APIVersion,
 			Kind:        deployment.Kind,

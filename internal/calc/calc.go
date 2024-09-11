@@ -42,9 +42,11 @@ func (cErr CalculationError) Unwrap() error {
 
 // ResourceUsage summarizes the usage of compute resources for a k8s resource.
 type ResourceUsage struct {
-	CPU     *resource.Quantity
-	Memory  *resource.Quantity
-	Details Details
+	CpuMin    *resource.Quantity
+	CpuMax    *resource.Quantity
+	MemoryMin *resource.Quantity
+	MemoryMax *resource.Quantity
+	Details   Details
 }
 
 // Details contains a few details of a k8s resource, which are needed to generate a detailed resource
@@ -58,22 +60,28 @@ type Details struct {
 	MaxReplicas int32
 }
 
-func podResources(podSpec *v1.PodSpec) (cpu, memory *resource.Quantity) {
-	cpu = new(resource.Quantity)
-	memory = new(resource.Quantity)
+func podResources(podSpec *v1.PodSpec) (cpuMin, cpuMax, memoryMin, memoryMax *resource.Quantity) {
+	cpuMin = new(resource.Quantity)
+	cpuMax = new(resource.Quantity)
+	memoryMin = new(resource.Quantity)
+	memoryMax = new(resource.Quantity)
 
 	for i := range podSpec.Containers {
 		container := podSpec.Containers[i]
 
-		cpu.Add(*container.Resources.Limits.Cpu())
-		memory.Add(*container.Resources.Limits.Memory())
+		cpuMin.Add(*container.Resources.Requests.Cpu())
+		cpuMax.Add(*container.Resources.Limits.Cpu())
+		memoryMin.Add(*container.Resources.Requests.Memory())
+		memoryMax.Add(*container.Resources.Limits.Memory())
 	}
 
 	for i := range podSpec.InitContainers {
 		container := podSpec.InitContainers[i]
 
-		cpu.Add(*container.Resources.Limits.Cpu())
-		memory.Add(*container.Resources.Limits.Memory())
+		cpuMin.Add(*container.Resources.Requests.Cpu())
+		cpuMax.Add(*container.Resources.Limits.Cpu())
+		memoryMin.Add(*container.Resources.Requests.Memory())
+		memoryMax.Add(*container.Resources.Limits.Memory())
 	}
 
 	return

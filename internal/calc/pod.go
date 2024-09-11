@@ -3,11 +3,13 @@ package calc
 import v1 "k8s.io/api/core/v1"
 
 func pod(pod v1.Pod) *ResourceUsage {
-	cpu, memory := podResources(&pod.Spec)
+	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&pod.Spec)
 
 	resourceUsage := ResourceUsage{
-		CPU:    cpu,
-		Memory: memory,
+		CpuMin:    cpuMin,
+		CpuMax:    cpuMax,
+		MemoryMin: memoryMin,
+		MemoryMax: memoryMax,
 		Details: Details{
 			Version:     pod.APIVersion,
 			Kind:        pod.Kind,

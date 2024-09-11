@@ -12,8 +12,10 @@ func TestDeployment(t *testing.T) {
 	var tests = []struct {
 		name        string
 		deployment  string
-		cpu         resource.Quantity
-		memory      resource.Quantity
+		cpuMin      resource.Quantity
+		cpuMax      resource.Quantity
+		memoryMin   resource.Quantity
+		memoryMax   resource.Quantity
 		replicas    int32
 		maxReplicas int32
 		strategy    appsv1.DeploymentStrategyType
@@ -21,8 +23,10 @@ func TestDeployment(t *testing.T) {
 		{
 			name:        "normal deployment",
 			deployment:  normalDeployment,
-			cpu:         resource.MustParse("5500m"),
-			memory:      resource.MustParse("44Gi"),
+			cpuMin:      resource.MustParse("2750m"),
+			cpuMax:      resource.MustParse("5500m"),
+			memoryMin:   resource.MustParse("22Gi"),
+			memoryMax:   resource.MustParse("44Gi"),
 			replicas:    10,
 			maxReplicas: 11,
 			strategy:    appsv1.RollingUpdateDeploymentStrategyType,
@@ -30,8 +34,10 @@ func TestDeployment(t *testing.T) {
 		{
 			name:        "deployment without strategy",
 			deployment:  deploymentWithoutStrategy,
-			cpu:         resource.MustParse("11"),
-			memory:      resource.MustParse("44Gi"),
+			cpuMin:      resource.MustParse("2750m"),
+			cpuMax:      resource.MustParse("11"),
+			memoryMin:   resource.MustParse("22Gi"),
+			memoryMax:   resource.MustParse("44Gi"),
 			replicas:    10,
 			maxReplicas: 11,
 			strategy:    appsv1.RollingUpdateDeploymentStrategyType,
@@ -39,8 +45,10 @@ func TestDeployment(t *testing.T) {
 		{
 			name:        "deployment with absolute unavailable/surge values",
 			deployment:  deploymentWithAbsoluteValues,
-			cpu:         resource.MustParse("12"),
-			memory:      resource.MustParse("48Gi"),
+			cpuMin:      resource.MustParse("3"),
+			cpuMax:      resource.MustParse("12"),
+			memoryMin:   resource.MustParse("24Gi"),
+			memoryMax:   resource.MustParse("48Gi"),
 			replicas:    10,
 			maxReplicas: 12,
 			strategy:    appsv1.RollingUpdateDeploymentStrategyType,
@@ -48,8 +56,10 @@ func TestDeployment(t *testing.T) {
 		{
 			name:        "zero replica deployment",
 			deployment:  zeroReplicaDeployment,
-			cpu:         resource.MustParse("0"),
-			memory:      resource.MustParse("0"),
+			cpuMin:      resource.MustParse("0"),
+			cpuMax:      resource.MustParse("0"),
+			memoryMin:   resource.MustParse("0"),
+			memoryMax:   resource.MustParse("0"),
 			replicas:    0,
 			maxReplicas: 0,
 			strategy:    appsv1.RollingUpdateDeploymentStrategyType,
@@ -57,8 +67,10 @@ func TestDeployment(t *testing.T) {
 		{
 			name:        "recreate deployment",
 			deployment:  recrateDeployment,
-			cpu:         resource.MustParse("10"),
-			memory:      resource.MustParse("40Gi"),
+			cpuMin:      resource.MustParse("2500m"),
+			cpuMax:      resource.MustParse("10"),
+			memoryMin:   resource.MustParse("20Gi"),
+			memoryMax:   resource.MustParse("40Gi"),
 			replicas:    10,
 			maxReplicas: 10,
 			strategy:    appsv1.RecreateDeploymentStrategyType,
@@ -66,17 +78,23 @@ func TestDeployment(t *testing.T) {
 		{
 			name:        "deployment without max unavailable/surge values",
 			deployment:  deploymentWithoutValues,
-			cpu:         resource.MustParse("11"),
-			memory:      resource.MustParse("44Gi"),
+			cpuMin:      resource.MustParse("2750m"),
+			cpuMax:      resource.MustParse("11"),
+			memoryMin:   resource.MustParse("22Gi"),
+			memoryMax:   resource.MustParse("44Gi"),
 			replicas:    10,
 			maxReplicas: 11,
 			strategy:    appsv1.RollingUpdateDeploymentStrategyType,
 		},
 		{
-			name:        "deployment with init container(s)",
-			deployment:  initContainerDeployment,
-			cpu:         resource.MustParse("4400m"),
-			memory:      resource.MustParse("17184Mi"),
+			name:       "deployment with init container(s)",
+			deployment: initContainerDeployment,
+			// TODO the expectation shouldn't be for the init container resources to be considered for all containers,
+			//  just the amount that can be in non-ready state simultaneously
+			cpuMin:      resource.MustParse("1200m"),
+			cpuMax:      resource.MustParse("4400m"),
+			memoryMin:   resource.MustParse("8592Mi"),
+			memoryMax:   resource.MustParse("17184Mi"),
 			replicas:    3,
 			maxReplicas: 4,
 			strategy:    appsv1.RollingUpdateDeploymentStrategyType,
@@ -91,8 +109,10 @@ func TestDeployment(t *testing.T) {
 			r.NoError(err)
 			r.NotEmpty(usage)
 
-			r.Equalf(test.cpu.MilliValue(), usage.CPU.MilliValue(), "cpu value")
-			r.Equal(0, test.memory.Cmp(*usage.Memory), "memory value %d != %d", test.memory.Value(), usage.Memory.Value())
+			AssertEqualQuantities(r, test.cpuMin, *usage.CpuMin, "cpu request value")
+			AssertEqualQuantities(r, test.cpuMax, *usage.CpuMax, "cpu limit value")
+			AssertEqualQuantities(r, test.memoryMin, *usage.MemoryMin, "memory request value")
+			AssertEqualQuantities(r, test.memoryMax, *usage.MemoryMax, "memory limit value")
 			r.Equal(test.replicas, usage.Details.Replicas, "replicas")
 			r.Equal(string(test.strategy), usage.Details.Strategy, "strategy")
 			r.Equal(test.maxReplicas, usage.Details.MaxReplicas, "maxReplicas")

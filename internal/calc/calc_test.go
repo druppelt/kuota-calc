@@ -2,6 +2,7 @@ package calc
 
 import (
 	"errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,6 @@ spec:
   to:
     kind: Service
     name: coffee-svc `
-
 
 var normalDeployment = `---
 apiVersion: apps/v1
@@ -96,6 +96,9 @@ spec:
         - image: myinit:v1.0.7
           name: myinit
           resources:
+            requests:
+              cpu: '50m'
+              memory: '100Mi'
             limits:
               cpu: '100m'
               memory: '200Mi'
@@ -454,7 +457,7 @@ spec:
       restartPolicy: Never
   backoffLimit: 4`
 
-var normalCronJob =`---
+var normalCronJob = `---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -500,7 +503,7 @@ spec:
         memory: 2Gi
   terminationGracePeriodSeconds: 30`
 
-var  normalDaemonSet = `
+var normalDaemonSet = `
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -544,8 +547,11 @@ func TestResourceQuotaFromYaml(t *testing.T) {
 	usage, err = ResourceQuotaFromYaml([]byte(unsupportedOpenshiftRoute))
 	t.Log(err)
 	r.Error(err)
-	r.True(errors.Is(err,ErrResourceNotSupported))
+	r.True(errors.Is(err, ErrResourceNotSupported))
 	r.Nil(usage)
-	r.True(errors.As(err,&calcErr))
+	r.True(errors.As(err, &calcErr))
 }
 
+func AssertEqualQuantities(r *require.Assertions, expected resource.Quantity, actual resource.Quantity, name string) {
+	r.Conditionf(func() bool { return expected.Equal(actual) }, name+" expected: "+expected.String()+" but was: "+actual.String())
+}

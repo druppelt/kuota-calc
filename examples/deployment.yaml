@@ -18,7 +18,7 @@ spec:
   template:
     metadata:
         labels:
-        app: myapp
+          app: myapp
     spec:
       containers:
       - image: myapp:0.1.0

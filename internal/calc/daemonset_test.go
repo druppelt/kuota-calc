@@ -10,21 +10,25 @@ import (
 
 func TestDaemonSet(t *testing.T) {
 	var tests = []struct {
-		name      string
-		daemonset string
-		cpu       resource.Quantity
-		memory      resource.Quantity
+		name        string
+		daemonset   string
+		cpuMin      resource.Quantity
+		cpuMax      resource.Quantity
+		memoryMin   resource.Quantity
+		memoryMax   resource.Quantity
 		replicas    int32
 		maxReplicas int32
 		strategy    appsv1.StatefulSetUpdateStrategyType
 	}{
 		{
-			name:      "ok",
-			daemonset: normalDaemonSet,
-			replicas: 1,
+			name:        "ok",
+			daemonset:   normalDaemonSet,
+			replicas:    1,
 			maxReplicas: 1,
-			cpu:       resource.MustParse("2"),
-			memory:    resource.MustParse("2Gi"),
+			cpuMin:      resource.MustParse("500m"),
+			cpuMax:      resource.MustParse("2"),
+			memoryMin:   resource.MustParse("200Mi"),
+			memoryMax:   resource.MustParse("2Gi"),
 		},
 	}
 
@@ -37,8 +41,10 @@ func TestDaemonSet(t *testing.T) {
 				r.NoError(err)
 				r.NotEmpty(usage)
 
-				r.Equalf(test.cpu.Value(), usage.CPU.Value(), "cpu value")
-				r.Equalf(test.memory.Value(), usage.Memory.Value(), "memory value")
+				AssertEqualQuantities(r, test.cpuMin, *usage.CpuMin, "cpu request value")
+				AssertEqualQuantities(r, test.cpuMax, *usage.CpuMax, "cpu limit value")
+				AssertEqualQuantities(r, test.memoryMin, *usage.MemoryMin, "memory request value")
+				AssertEqualQuantities(r, test.memoryMax, *usage.MemoryMax, "memory limit value")
 				r.Equalf(test.replicas, usage.Details.Replicas, "replicas")
 				r.Equalf(test.maxReplicas, usage.Details.MaxReplicas, "maxReplicas")
 				r.Equalf(string(test.strategy), usage.Details.Strategy, "strategy")

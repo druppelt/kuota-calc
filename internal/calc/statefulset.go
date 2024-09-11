@@ -19,16 +19,23 @@ func statefulSet(s appsv1.StatefulSet) *ResourceUsage {
 		replicas = 1
 	}
 
-	cpu, memory := podResources(&s.Spec.Template.Spec)
+	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&s.Spec.Template.Spec)
 
-	mem := float64(memory.Value()) * float64(replicas)
-	memory.Set(int64(math.Round(mem)))
+	memMin := float64(memoryMin.Value()) * float64(replicas)
+	memoryMin.Set(int64(math.Round(memMin)))
 
-	cpu.Set(int64(math.Round(float64(cpu.Value()) * float64(replicas))))
+	memMax := float64(memoryMax.Value()) * float64(replicas)
+	memoryMax.Set(int64(math.Round(memMax)))
+
+	cpuMin.SetMilli(int64(math.Round(float64(cpuMin.MilliValue()) * float64(replicas))))
+
+	cpuMax.SetMilli(int64(math.Round(float64(cpuMax.MilliValue()) * float64(replicas))))
 
 	resourceUsage := ResourceUsage{
-		CPU:    cpu,
-		Memory: memory,
+		CpuMin:    cpuMin,
+		CpuMax:    cpuMax,
+		MemoryMin: memoryMin,
+		MemoryMax: memoryMax,
 		Details: Details{
 			Version:     s.APIVersion,
 			Kind:        s.Kind,

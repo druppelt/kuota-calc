@@ -121,18 +121,20 @@ func (opts *KuotaCalcOpts) run() error {
 func (opts *KuotaCalcOpts) printDetailed(usage []*calc.ResourceUsage) {
 	w := tabwriter.NewWriter(opts.Out, 0, 0, 4, ' ', tabwriter.TabIndent)
 
-	fmt.Fprintf(w, "Version\tKind\tName\tReplicas\tStrategy\tMaxReplicas\tCPU\tMemory\t\n")
+	fmt.Fprintf(w, "Version\tKind\tName\tReplicas\tStrategy\tMaxReplicas\tCPURequest\tCPULimit\tMemoryRequest\tMemoryLimit\t\n")
 
 	for _, u := range usage {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t\n",
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t\n",
 			u.Details.Version,
 			u.Details.Kind,
 			u.Details.Name,
 			u.Details.Replicas,
 			u.Details.Strategy,
 			u.Details.MaxReplicas,
-			u.CPU,
-			u.Memory,
+			u.CpuMin,
+			u.CpuMax,
+			u.MemoryMin,
+			u.MemoryMax,
 		)
 	}
 
@@ -145,17 +147,23 @@ func (opts *KuotaCalcOpts) printDetailed(usage []*calc.ResourceUsage) {
 
 func (opts *KuotaCalcOpts) printSummary(usage []*calc.ResourceUsage) {
 	var (
-		cpuUsage    resource.Quantity
-		memoryUsage resource.Quantity
+		cpuMinUsage    resource.Quantity
+		cpuMaxUsage    resource.Quantity
+		memoryMinUsage resource.Quantity
+		memoryMaxUsage resource.Quantity
 	)
 
 	for _, u := range usage {
-		cpuUsage.Add(*u.CPU)
-		memoryUsage.Add(*u.Memory)
+		cpuMinUsage.Add(*u.CpuMin)
+		cpuMaxUsage.Add(*u.CpuMax)
+		memoryMinUsage.Add(*u.MemoryMin)
+		memoryMaxUsage.Add(*u.MemoryMax)
 	}
 
-	fmt.Fprintf(opts.Out, "CPU: %s\nMemory: %s\n",
-		cpuUsage.String(),
-		memoryUsage.String(),
+	fmt.Fprintf(opts.Out, "CPU Request: %s\nCPU Limit: %s\nMemory Request: %s\nMemory Limit: %s\n",
+		cpuMinUsage.String(),
+		cpuMaxUsage.String(),
+		memoryMinUsage.String(),
+		memoryMaxUsage.String(),
 	)
 }
