@@ -19,13 +19,15 @@ Calculating the needed compute resources can be a bit challenging (especially wi
 ## Example
 ```bash
 $ cat examples/deployment.yaml | kuota-calc -detailed
-Version    Kind           Name     Replicas    Strategy         MaxReplicas    CPU      Memory
-apps/v1    Deployment     myapp    10          RollingUpdate    11             5500m    2816Mi
-apps/v1    StatefulSet    myapp    3           RollingUpdate    3              3        12Gi
+Version    Kind           Name     Replicas    Strategy         MaxReplicas    CPURequest    CPULimit    MemoryRequest    MemoryLimit
+apps/v1    Deployment     myapp    10          RollingUpdate    11             2750m         5500m       704Mi            2816Mi
+apps/v1    StatefulSet    myapp    3           RollingUpdate    3              750m          3           6Gi              12Gi
 
 Total
-CPU: 8500m
-Memory: 15104Mi
+CPU Request: 3500m
+CPU Limit: 8500m
+Memory Request: 6848Mi
+Memory Limit: 15104Mi
 ```
 
 ## Installation
