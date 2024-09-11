@@ -1,4 +1,4 @@
-module github.com/postfinance/kuota-calc
+module github.com/druppelt/kuota-calc
 
 go 1.22.0
 

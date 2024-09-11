@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"text/tabwriter"
 
-	"github.com/postfinance/kuota-calc/internal/calc"
+	"github.com/druppelt/kuota-calc/internal/calc"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/yaml"
