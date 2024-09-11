@@ -52,8 +52,8 @@ func TestStatefulSet(t *testing.T) {
 			r.NoError(err)
 			r.NotEmpty(usage)
 
-			AssertEqualQuantities(r, test.cpuMin, *usage.CpuMin, "cpu request value")
-			AssertEqualQuantities(r, test.cpuMax, *usage.CpuMax, "cpu limit value")
+			AssertEqualQuantities(r, test.cpuMin, *usage.CPUMin, "cpu request value")
+			AssertEqualQuantities(r, test.cpuMax, *usage.CPUMax, "cpu limit value")
 			AssertEqualQuantities(r, test.memoryMin, *usage.MemoryMin, "memory request value")
 			AssertEqualQuantities(r, test.memoryMax, *usage.MemoryMax, "memory limit value")
 			r.Equalf(test.replicas, usage.Details.Replicas, "replicas")

@@ -22,8 +22,8 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 
 	if *replicas == 0 {
 		return &ResourceUsage{
-			CpuMin:    new(resource.Quantity),
-			CpuMax:    new(resource.Quantity),
+			CPUMin:    new(resource.Quantity),
+			CPUMax:    new(resource.Quantity),
 			MemoryMin: new(resource.Quantity),
 			MemoryMax: new(resource.Quantity),
 			Details: Details{
@@ -105,8 +105,8 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 	cpuMax.SetMilli(int64(math.Round(float64(cpuMax.MilliValue()) * float64(*replicas) * resourceOverhead)))
 
 	resourceUsage := ResourceUsage{
-		CpuMin:    cpuMin,
-		CpuMax:    cpuMax,
+		CPUMin:    cpuMin,
+		CPUMax:    cpuMax,
 		MemoryMin: memoryMin,
 		MemoryMax: memoryMax,
 		Details: Details{

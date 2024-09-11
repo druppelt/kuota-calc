@@ -42,8 +42,8 @@ func (cErr CalculationError) Unwrap() error {
 
 // ResourceUsage summarizes the usage of compute resources for a k8s resource.
 type ResourceUsage struct {
-	CpuMin    *resource.Quantity
-	CpuMax    *resource.Quantity
+	CPUMin    *resource.Quantity
+	CPUMax    *resource.Quantity
 	MemoryMin *resource.Quantity
 	MemoryMax *resource.Quantity
 	Details   Details

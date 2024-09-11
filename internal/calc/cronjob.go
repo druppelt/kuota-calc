@@ -6,8 +6,8 @@ func cronjob(cronjob batchV1.CronJob) *ResourceUsage {
 	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&cronjob.Spec.JobTemplate.Spec.Template.Spec)
 
 	resourceUsage := ResourceUsage{
-		CpuMin:    cpuMin,
-		CpuMax:    cpuMax,
+		CPUMin:    cpuMin,
+		CPUMax:    cpuMax,
 		MemoryMin: memoryMin,
 		MemoryMax: memoryMax,
 		Details: Details{

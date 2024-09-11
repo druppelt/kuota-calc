@@ -131,8 +131,8 @@ func (opts *KuotaCalcOpts) printDetailed(usage []*calc.ResourceUsage) {
 			u.Details.Replicas,
 			u.Details.Strategy,
 			u.Details.MaxReplicas,
-			u.CpuMin,
-			u.CpuMax,
+			u.CPUMin,
+			u.CPUMax,
 			u.MemoryMin,
 			u.MemoryMax,
 		)
@@ -154,8 +154,8 @@ func (opts *KuotaCalcOpts) printSummary(usage []*calc.ResourceUsage) {
 	)
 
 	for _, u := range usage {
-		cpuMinUsage.Add(*u.CpuMin)
-		cpuMaxUsage.Add(*u.CpuMax)
+		cpuMinUsage.Add(*u.CPUMin)
+		cpuMaxUsage.Add(*u.CPUMax)
 		memoryMinUsage.Add(*u.MemoryMin)
 		memoryMaxUsage.Add(*u.MemoryMax)
 	}

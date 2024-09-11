@@ -8,8 +8,8 @@ func daemonSet(dSet appsv1.DaemonSet) *ResourceUsage {
 	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&dSet.Spec.Template.Spec)
 
 	resourceUsage := ResourceUsage{
-		CpuMin:    cpuMin,
-		CpuMax:    cpuMax,
+		CPUMin:    cpuMin,
+		CPUMax:    cpuMax,
 		MemoryMin: memoryMin,
 		MemoryMax: memoryMax,
 		Details: Details{

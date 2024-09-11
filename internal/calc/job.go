@@ -6,8 +6,8 @@ func job(job batchV1.Job) *ResourceUsage {
 	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&job.Spec.Template.Spec)
 
 	resourceUsage := ResourceUsage{
-		CpuMin:    cpuMin,
-		CpuMax:    cpuMax,
+		CPUMin:    cpuMin,
+		CPUMax:    cpuMax,
 		MemoryMin: memoryMin,
 		MemoryMax: memoryMax,
 		Details: Details{

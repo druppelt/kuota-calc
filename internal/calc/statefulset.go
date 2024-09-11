@@ -32,8 +32,8 @@ func statefulSet(s appsv1.StatefulSet) *ResourceUsage {
 	cpuMax.SetMilli(int64(math.Round(float64(cpuMax.MilliValue()) * float64(replicas))))
 
 	resourceUsage := ResourceUsage{
-		CpuMin:    cpuMin,
-		CpuMax:    cpuMax,
+		CPUMin:    cpuMin,
+		CPUMax:    cpuMax,
 		MemoryMin: memoryMin,
 		MemoryMax: memoryMax,
 		Details: Details{

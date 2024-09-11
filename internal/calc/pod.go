@@ -6,8 +6,8 @@ func pod(pod v1.Pod) *ResourceUsage {
 	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&pod.Spec)
 
 	resourceUsage := ResourceUsage{
-		CpuMin:    cpuMin,
-		CpuMax:    cpuMax,
+		CPUMin:    cpuMin,
+		CPUMax:    cpuMax,
 		MemoryMin: memoryMin,
 		MemoryMax: memoryMax,
 		Details: Details{
