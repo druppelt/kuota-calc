@@ -88,7 +88,7 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 		if podOverheadInt > math.MaxInt32 || podOverheadInt < math.MinInt32 {
 			return nil, fmt.Errorf("deployment: %s maxSurge - maxUnavailable (%d-%d) was out of bounds for int32", deployment.Name, maxSurge, maxUnavailable)
 		}
-		podOverhead = int32(podOverheadInt) //nolint:gosec
+		podOverhead = int32(podOverheadInt) //nolint:gosec,wsl
 
 		resourceOverhead = (float64(podOverhead) / float64(*replicas)) + 1
 	default:
