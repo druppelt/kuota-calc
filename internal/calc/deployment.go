@@ -2,11 +2,10 @@ package calc
 
 import (
 	"fmt"
-	"math"
-
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"math"
 )
 
 // calculates the cpu/memory resources a single deployment needs. Replicas and the deployment
@@ -43,7 +42,7 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 		resourceOverhead = 1
 		podOverhead = 0
 	case "":
-		// RollingUpdate is the default an can be an empty string. If so, set the defaults
+		// RollingUpdate is the default and can be an empty string. If so, set the defaults
 		// (https://pkg.go.dev/k8s.io/api/apps/v1?tab=doc#RollingUpdateDeployment) and continue calculation.
 		defaults := intstr.FromString("25%")
 		strategy = appsv1.DeploymentStrategy{
@@ -85,7 +84,11 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 		}
 
 		// podOverhead is the number of pods which can run more during a deployment
-		podOverhead = int32(maxSurge - maxUnavailable)
+		podOverheadInt := maxSurge - maxUnavailable
+		if podOverheadInt > math.MaxInt32 || podOverheadInt < math.MinInt32 {
+			return nil, fmt.Errorf("deployment: %s maxSurge - maxUnavailable (%d-%d) was out of bounds for int32", deployment.Name, maxSurge, maxUnavailable)
+		}
+		podOverhead = int32(podOverheadInt)
 
 		resourceOverhead = (float64(podOverhead) / float64(*replicas)) + 1
 	default:
