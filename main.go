@@ -10,7 +10,7 @@ import (
 
 //nolint:gochecknoglobals // Set by goreleaser on build
 var (
-	version, date, commit string = "master", "?", "?"
+	version, date, commit = "master", "?", "?"
 )
 
 const (

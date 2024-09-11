@@ -66,7 +66,7 @@ func NewKuotaCalcCmd(version *Version, streams genericclioptions.IOStreams) *cob
 }
 
 func (opts *KuotaCalcOpts) printVersion() error {
-	fmt.Fprintf(opts.Out, "version %s (revision: %s)\n\tbuild date: %s\n\tgo version: %s\n",
+	_, _ = fmt.Fprintf(opts.Out, "version %s (revision: %s)\n\tbuild date: %s\n\tgo version: %s\n",
 		opts.versionInfo.Version,
 		opts.versionInfo.Commit,
 		opts.versionInfo.Date,
@@ -97,7 +97,7 @@ func (opts *KuotaCalcOpts) run() error {
 		if err != nil {
 			if errors.Is(err, calc.ErrResourceNotSupported) {
 				if opts.debug {
-					fmt.Fprintf(opts.Out, "DEBUG: %s\n", err)
+					_, _ = fmt.Fprintf(opts.Out, "DEBUG: %s\n", err)
 				}
 
 				continue
@@ -121,10 +121,10 @@ func (opts *KuotaCalcOpts) run() error {
 func (opts *KuotaCalcOpts) printDetailed(usage []*calc.ResourceUsage) {
 	w := tabwriter.NewWriter(opts.Out, 0, 0, 4, ' ', tabwriter.TabIndent)
 
-	fmt.Fprintf(w, "Version\tKind\tName\tReplicas\tStrategy\tMaxReplicas\tCPURequest\tCPULimit\tMemoryRequest\tMemoryLimit\t\n")
+	_, _ = fmt.Fprintf(w, "Version\tKind\tName\tReplicas\tStrategy\tMaxReplicas\tCPURequest\tCPULimit\tMemoryRequest\tMemoryLimit\t\n")
 
 	for _, u := range usage {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t\n",
 			u.Details.Version,
 			u.Details.Kind,
 			u.Details.Name,
@@ -138,9 +138,11 @@ func (opts *KuotaCalcOpts) printDetailed(usage []*calc.ResourceUsage) {
 		)
 	}
 
-	w.Flush()
+	if err := w.Flush(); err != nil {
+		_, _ = fmt.Fprintf(opts.Out, "printing detailed resources to tabwriter failed: %v\n", err)
+	}
 
-	fmt.Fprintf(opts.Out, "\nTotal\n")
+	_, _ = fmt.Fprintf(opts.Out, "\nTotal\n")
 
 	opts.printSummary(usage)
 }
@@ -160,7 +162,7 @@ func (opts *KuotaCalcOpts) printSummary(usage []*calc.ResourceUsage) {
 		memoryMaxUsage.Add(*u.MemoryMax)
 	}
 
-	fmt.Fprintf(opts.Out, "CPU Request: %s\nCPU Limit: %s\nMemory Request: %s\nMemory Limit: %s\n",
+	_, _ = fmt.Fprintf(opts.Out, "CPU Request: %s\nCPU Limit: %s\nMemory Request: %s\nMemory Limit: %s\n",
 		cpuMinUsage.String(),
 		cpuMaxUsage.String(),
 		memoryMinUsage.String(),

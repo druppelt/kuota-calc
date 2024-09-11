@@ -72,14 +72,14 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 			maxSurgeValue = *strategy.RollingUpdate.MaxSurge
 		}
 
-		// docs say, that the asolute number is calculated by rounding down.
-		maxUnavailable, err := intstr.GetValueFromIntOrPercent(&maxUnavailableValue, int(*replicas), false)
+		// docs say, that the absolute number is calculated by rounding down.
+		maxUnavailable, err := intstr.GetScaledValueFromIntOrPercent(&maxUnavailableValue, int(*replicas), false)
 		if err != nil {
 			return nil, err
 		}
 
 		// docs say, absolute number is calculated by rounding up.
-		maxSurge, err := intstr.GetValueFromIntOrPercent(&maxSurgeValue, int(*replicas), true)
+		maxSurge, err := intstr.GetScaledValueFromIntOrPercent(&maxSurgeValue, int(*replicas), true)
 		if err != nil {
 			return nil, err
 		}

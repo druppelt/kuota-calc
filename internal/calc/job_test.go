@@ -44,7 +44,7 @@ func TestJob(t *testing.T) {
 				AssertEqualQuantities(r, test.memoryMax, *usage.MemoryMax, "memory limit value")
 				r.Equalf(test.replicas, usage.Details.Replicas, "replicas")
 				r.Equalf(test.maxReplicas, usage.Details.MaxReplicas, "maxReplicas")
-				r.Equalf(string(test.strategy), usage.Details.Strategy, "strategy")
+				r.Equalf(test.strategy, usage.Details.Strategy, "strategy")
 			},
 		)
 	}
