@@ -49,7 +49,7 @@ func NewKuotaCalcCmd(version *Version, streams genericclioptions.IOStreams) *cob
 		Short:        "Calculate the resource quota needs of your deployment(s).",
 		Example:      fmt.Sprintf(kuotaCalcExample, "kuota-calc"),
 		SilenceUsage: true,
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			if opts.version {
 				return opts.printVersion()
 			}
