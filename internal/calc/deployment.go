@@ -21,7 +21,7 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 
 	if *replicas == 0 {
 		return &ResourceUsage{
-			resources: *new(Resources),
+			Resources: *new(Resources),
 			Details: Details{
 				Version:     deployment.APIVersion,
 				Kind:        deployment.Kind,
@@ -96,7 +96,7 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 	newResources := (*podResources).Mul(float64(*replicas)).Mul(resourceOverhead)
 
 	resourceUsage := ResourceUsage{
-		resources: newResources,
+		Resources: newResources,
 		Details: Details{
 			Version:     deployment.APIVersion,
 			Kind:        deployment.Kind,

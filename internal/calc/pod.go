@@ -6,7 +6,7 @@ func pod(pod v1.Pod) *ResourceUsage {
 	podResources := podResources(&pod.Spec)
 
 	resourceUsage := ResourceUsage{
-		resources: *podResources,
+		Resources: *podResources,
 		Details: Details{
 			Version:     pod.APIVersion,
 			Kind:        pod.Kind,

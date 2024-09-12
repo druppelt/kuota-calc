@@ -45,7 +45,7 @@ func (cErr CalculationError) Unwrap() error {
 
 // ResourceUsage summarizes the usage of compute resources for a k8s resource.
 type ResourceUsage struct {
-	resources Resources
+	Resources Resources
 	Details   Details
 }
 

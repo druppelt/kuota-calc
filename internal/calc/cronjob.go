@@ -6,7 +6,7 @@ func cronjob(cronjob batchV1.CronJob) *ResourceUsage {
 	podResources := podResources(&cronjob.Spec.JobTemplate.Spec.Template.Spec)
 
 	resourceUsage := ResourceUsage{
-		resources: *podResources,
+		Resources: *podResources,
 		Details: Details{
 			Version:     cronjob.APIVersion,
 			Kind:        cronjob.Kind,

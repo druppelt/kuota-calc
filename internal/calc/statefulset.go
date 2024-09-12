@@ -21,7 +21,7 @@ func statefulSet(s appsv1.StatefulSet) *ResourceUsage {
 	newResources := (*podResources).Mul(float64(replicas))
 
 	resourceUsage := ResourceUsage{
-		resources: newResources,
+		Resources: newResources,
 		Details: Details{
 			Version:     s.APIVersion,
 			Kind:        s.Kind,

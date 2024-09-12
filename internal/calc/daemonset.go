@@ -8,7 +8,7 @@ func daemonSet(dSet appsv1.DaemonSet) *ResourceUsage {
 	podResources := podResources(&dSet.Spec.Template.Spec)
 
 	resourceUsage := ResourceUsage{
-		resources: *podResources,
+		Resources: *podResources,
 		Details: Details{
 			Version:     dSet.APIVersion,
 			Kind:        dSet.Kind,

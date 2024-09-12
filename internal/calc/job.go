@@ -6,7 +6,7 @@ func job(job batchV1.Job) *ResourceUsage {
 	podResources := podResources(&job.Spec.Template.Spec)
 
 	resourceUsage := ResourceUsage{
-		resources: *podResources,
+		Resources: *podResources,
 		Details: Details{
 			Version:     job.APIVersion,
 			Kind:        job.Kind,
