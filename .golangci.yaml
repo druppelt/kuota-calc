@@ -1,11 +1,6 @@
 ---
 run:
   tests: false
-  skip-dirs:
-    - .github
-    - build
-    - web
-    - .go
 linters-settings:
   dupl:
     threshold: 100
@@ -29,8 +24,6 @@ linters-settings:
     min-complexity: 15
   revive:
     min-confidence: 0.8
-  govet:
-    check-shadowing: true
   lll:
     line-length: 140
   misspell:
@@ -47,7 +40,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - dogsled
     - dupl
     - errcheck
@@ -71,18 +63,21 @@ linters:
     - nakedret
     - prealloc
     - rowserrcheck
-    - exportloopref
+    - copyloopvar
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
     - wsl
 issues:
+  exclude-dirs:
+    - .github
+    - build
+    - web
+    - .go
   exclude:
     # Very commonly not checked.
     - 'Error return value of .(l.Sync|.*Close|.*.Write|.*Flush|os\.Remove(All)?|os\.(Un)?Setenv). is not checked'
