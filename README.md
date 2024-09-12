@@ -30,6 +30,23 @@ Memory Request: 6848Mi
 Memory Limit: 15104Mi
 ```
 
+To calc usage for deploymentConfigs, deployments and statefulSets deployed in openshift:
+```bash
+$ oc get dc,sts,deploy -o json | yq -p=json -o=yaml '.items[] | split_doc' | kuota-calc --detailed
+Warning: apps.openshift.io/v1 DeploymentConfig is deprecated in v4.14+, unavailable in v4.10000+
+Version                 Kind                Name                        Replicas    Strategy         MaxReplicas    CPURequest    CPULimit    MemoryRequest    MemoryLimit
+apps.openshift.io/v1    DeploymentConfig    my-app-1                    0           Recreate         0              0             0           0                0
+apps.openshift.io/v1    DeploymentConfig    my-app-2                    1           Recreate         1              1250m         1700m       500Mi            500Mi
+apps/v1                 StatefulSet         my-app-3                    1           RollingUpdate    1              150m          1100m       2200Mi           2200Mi
+apps/v1                 Deployment          my-app-4                    1           RollingUpdate    2              100m          200m        100Mi            512Mi
+
+Total
+CPU Request: 1500m
+CPU Limit: 3
+Memory Request: 2800Mi
+Memory Limit: 3212Mi
+```
+
 ## Installation
 Pre-compiled statically linked binaries are available on the [releases page](https://github.com/druppelt/kuota-calc/releases).
 
@@ -37,11 +54,14 @@ kuota-calc can either be used as a kubectl plugin or invoked directly. If you in
 a kubectl plugin, simply place the binary anywhere in `$PATH` named `kubectl-kuota_calc` with execute permissions.
 For further information, see the offical documentation on kubectl plugins [here](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/).
 
-## supported k8s resources
-**kuota-calc is still a work-in progress**, there are plans to support more k8s resources (see [#5](https://github.com/druppelt/kuota-calc/issues/5) for more info). 
+**currently the kubectl plugin is not released for this fork**
+
+## supported k8s and os resources
+**kuota-calc is still a work-in progress**, there are plans to support more k8s resources (see [#5](https://github.com/postfinance/kuota-calc/issues/5) for more info). 
 
 Currently supported:
 
+- apps.openshift.io/v1 DeploymentConfig
 - apps/v1 Deployment
 - apps/v1 StatefulSet
 - apps/v1 DaemonSet
