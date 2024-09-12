@@ -131,10 +131,10 @@ func (opts *KuotaCalcOpts) printDetailed(usage []*calc.ResourceUsage) {
 			u.Details.Replicas,
 			u.Details.Strategy,
 			u.Details.MaxReplicas,
-			u.Resources.CPUMin,
-			u.Resources.CPUMax,
-			u.Resources.MemoryMin,
-			u.Resources.MemoryMax,
+			u.Resources.CPUMin.String(),
+			u.Resources.CPUMax.String(),
+			u.Resources.MemoryMin.String(),
+			u.Resources.MemoryMax.String(),
 		)
 	}
 

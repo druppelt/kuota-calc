@@ -18,7 +18,7 @@ func statefulSet(s appsv1.StatefulSet) *ResourceUsage {
 	}
 
 	podResources := podResources(&s.Spec.Template.Spec)
-	newResources := (*podResources).Mul(float64(replicas))
+	newResources := podResources.Mul(float64(replicas))
 
 	resourceUsage := ResourceUsage{
 		Resources: newResources,

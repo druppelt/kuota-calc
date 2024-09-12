@@ -60,6 +60,8 @@ type Details struct {
 	MaxReplicas int32
 }
 
+// Resources contains the limits and requests for cpu and memory that are typically used in kubernetes and openshift.
+// Can be used to apply arithmetic operations equally on all quantities.
 type Resources struct {
 	CPUMin    resource.Quantity
 	CPUMax    resource.Quantity
@@ -67,6 +69,7 @@ type Resources struct {
 	MemoryMax resource.Quantity
 }
 
+// ConvertToResources converts a kubernetes/openshift ResourceRequirements struct to a Resources struct
 func ConvertToResources(req *v1.ResourceRequirements) Resources {
 	return Resources{
 		CPUMin:    *req.Requests.Cpu(),
@@ -82,6 +85,7 @@ func (r Resources) Add(y Resources) Resources {
 	r.CPUMax.Add(y.CPUMax)
 	r.MemoryMin.Add(y.MemoryMin)
 	r.MemoryMax.Add(y.MemoryMax)
+
 	return r
 }
 
@@ -92,6 +96,7 @@ func (r Resources) Mul(y float64) Resources {
 	r.CPUMax.SetMilli(int64(float64(r.CPUMax.MilliValue()) * y))
 	r.MemoryMin.SetMilli(int64(float64(r.MemoryMin.MilliValue()) * y))
 	r.MemoryMax.SetMilli(int64(float64(r.MemoryMax.MilliValue()) * y))
+
 	return r
 }
 
