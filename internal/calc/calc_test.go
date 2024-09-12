@@ -20,6 +20,52 @@ spec:
     kind: Service
     name: coffee-svc `
 
+var normalDeploymentConfig = `---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: normal
+  name: normal
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 10
+  revisionHistoryLimit: 10
+  selector:
+    app: normal
+  strategy:
+    rollingParams:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: Rolling
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: normal
+    spec:
+      containers:
+        - image: myapp:v1.0.7
+          command:
+            - sleep
+            - infinity
+          imagePullPolicy: IfNotPresent
+          name: normal
+          resources:
+            limits:
+              cpu: '500m'
+              memory: 4Gi
+            requests:
+              cpu: '250m'
+              memory: 2Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30`
+
 var normalDeployment = `---
 apiVersion: apps/v1
 kind: Deployment

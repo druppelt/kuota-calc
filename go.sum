@@ -117,6 +117,10 @@ github.com/onsi/ginkgo/v2 v2.19.0 h1:9Cnnf7UHo57Hy3k6/m5k3dRfGTMXGvxhHFvkDTCTpvA
 github.com/onsi/ginkgo/v2 v2.19.0/go.mod h1:rlwLi9PilAFJ8jCg9UE1QP6VBpd6/xj3SRC0d6TU0To=
 github.com/onsi/gomega v1.33.1 h1:dsYjIxxSR755MDmKVsaFQTE22ChNBcuuTWgkUDSubOk=
 github.com/onsi/gomega v1.33.1/go.mod h1:U4R44UsT+9eLIaYRB2a5qajjtQYn0hauxvRm16AVYg0=
+github.com/openshift/api v0.0.0-20240911192208-3e5de946111c h1:46hH/7XmmaPmeJWTyrzh8TRB6I7TCwzJdxxWeyK8blM=
+github.com/openshift/api v0.0.0-20240911192208-3e5de946111c/go.mod h1:OOh6Qopf21pSzqNVCB5gomomBXb8o5sGKZxG2KNpaXM=
+github.com/openshift/client-go v0.0.0-20240906181530-b2f7c4ab0984 h1:4OVV/fm6ea+51rZbA/52SFbHdjlzjCKK6OCE7Xtn834=
+github.com/openshift/client-go v0.0.0-20240906181530-b2f7c4ab0984/go.mod h1:K+5rEJpGf5LpcwdNtkGsvV3u8wU7m3oHzcVZzuGTRZ4=
 github.com/peterbourgon/diskv v2.0.1+incompatible h1:UBdAOUP5p4RWqPBg048CAvpKN+vxiaj6gdUUzhl4XmI=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=

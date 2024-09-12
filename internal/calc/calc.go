@@ -4,13 +4,15 @@ package calc
 import (
 	"errors"
 	"fmt"
-
+	openshiftAppsV1 "github.com/openshift/api/apps/v1"
+	openshiftScheme "github.com/openshift/client-go/apps/clientset/versioned/scheme"
 	"github.com/rs/zerolog/log"
 	appsv1 "k8s.io/api/apps/v1"
 	batchV1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -101,7 +103,13 @@ func ResourceQuotaFromYaml(yamlData []byte) (*ResourceUsage, error) {
 
 	var kind string
 
-	object, gvk, err := scheme.Codecs.UniversalDeserializer().Decode(yamlData, nil, nil)
+	combinedScheme := runtime.NewScheme()
+	_ = scheme.AddToScheme(combinedScheme)
+	_ = openshiftScheme.AddToScheme(combinedScheme)
+	codecs := serializer.NewCodecFactory(combinedScheme)
+	decoder := codecs.UniversalDeserializer()
+
+	object, gvk, err := decoder.Decode(yamlData, nil, nil)
 
 	if err != nil {
 		// when the kind is not found, I just warn and skip
@@ -110,7 +118,7 @@ func ResourceQuotaFromYaml(yamlData []byte) (*ResourceUsage, error) {
 
 			unknown := runtime.Unknown{Raw: yamlData}
 
-			if _, gvk1, err := scheme.Codecs.UniversalDeserializer().Decode(yamlData, nil, &unknown); err == nil {
+			if _, gvk1, err := decoder.Decode(yamlData, nil, &unknown); err == nil {
 				kind = gvk1.Kind
 				version = gvk1.Version
 			}
@@ -123,6 +131,16 @@ func ResourceQuotaFromYaml(yamlData []byte) (*ResourceUsage, error) {
 	}
 
 	switch obj := object.(type) {
+	case *openshiftAppsV1.DeploymentConfig:
+		usage, err := deploymentConfig(*obj)
+		if err != nil {
+			return nil, CalculationError{
+				Version: gvk.Version,
+				Kind:    gvk.Kind,
+				err:     err,
+			}
+		}
+		return usage, nil
 	case *appsv1.Deployment:
 		usage, err := deployment(*obj)
 		if err != nil {

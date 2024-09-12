@@ -5,6 +5,8 @@ go 1.22.0
 toolchain go1.23.0
 
 require (
+	github.com/openshift/api v0.0.0-20240911192208-3e5de946111c
+	github.com/openshift/client-go v0.0.0-20240906181530-b2f7c4ab0984
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
