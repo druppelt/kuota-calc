@@ -2,10 +2,11 @@ package calc
 
 import (
 	"fmt"
+	"math"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"math"
 )
 
 // calculates the cpu/memory resources a single deployment needs. Replicas and the deployment

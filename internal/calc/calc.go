@@ -4,6 +4,7 @@ package calc
 import (
 	"errors"
 	"fmt"
+
 	openshiftAppsV1 "github.com/openshift/api/apps/v1"
 	openshiftScheme "github.com/openshift/client-go/apps/clientset/versioned/scheme"
 	"github.com/rs/zerolog/log"
@@ -140,6 +141,7 @@ func ResourceQuotaFromYaml(yamlData []byte) (*ResourceUsage, error) {
 				err:     err,
 			}
 		}
+
 		return usage, nil
 	case *appsv1.Deployment:
 		usage, err := deployment(*obj)
