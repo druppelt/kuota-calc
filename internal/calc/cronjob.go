@@ -3,13 +3,10 @@ package calc
 import batchV1 "k8s.io/api/batch/v1"
 
 func cronjob(cronjob batchV1.CronJob) *ResourceUsage {
-	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&cronjob.Spec.JobTemplate.Spec.Template.Spec)
+	podResources := podResources(&cronjob.Spec.JobTemplate.Spec.Template.Spec)
 
 	resourceUsage := ResourceUsage{
-		CPUMin:    cpuMin,
-		CPUMax:    cpuMax,
-		MemoryMin: memoryMin,
-		MemoryMax: memoryMax,
+		resources: *podResources,
 		Details: Details{
 			Version:     cronjob.APIVersion,
 			Kind:        cronjob.Kind,

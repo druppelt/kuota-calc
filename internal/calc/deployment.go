@@ -5,7 +5,6 @@ import (
 	"math"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -22,10 +21,7 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 
 	if *replicas == 0 {
 		return &ResourceUsage{
-			CPUMin:    new(resource.Quantity),
-			CPUMax:    new(resource.Quantity),
-			MemoryMin: new(resource.Quantity),
-			MemoryMax: new(resource.Quantity),
+			resources: *new(Resources),
 			Details: Details{
 				Version:     deployment.APIVersion,
 				Kind:        deployment.Kind,
@@ -96,23 +92,11 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 		return nil, fmt.Errorf("deployment: %s deployment strategy %q is unknown", deployment.Name, strategy.Type)
 	}
 
-	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&deployment.Spec.Template.Spec)
-
-	memMin := float64(memoryMin.Value()) * float64(*replicas) * resourceOverhead
-	memoryMin.Set(int64(math.Round(memMin)))
-
-	memMax := float64(memoryMax.Value()) * float64(*replicas) * resourceOverhead
-	memoryMax.Set(int64(math.Round(memMax)))
-
-	cpuMin.SetMilli(int64(math.Round(float64(cpuMin.MilliValue()) * float64(*replicas) * resourceOverhead)))
-
-	cpuMax.SetMilli(int64(math.Round(float64(cpuMax.MilliValue()) * float64(*replicas) * resourceOverhead)))
+	podResources := podResources(&deployment.Spec.Template.Spec)
+	newResources := (*podResources).Mul(float64(*replicas)).Mul(resourceOverhead)
 
 	resourceUsage := ResourceUsage{
-		CPUMin:    cpuMin,
-		CPUMax:    cpuMax,
-		MemoryMin: memoryMin,
-		MemoryMax: memoryMax,
+		resources: newResources,
 		Details: Details{
 			Version:     deployment.APIVersion,
 			Kind:        deployment.Kind,

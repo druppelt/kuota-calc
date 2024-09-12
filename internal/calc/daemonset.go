@@ -5,13 +5,10 @@ import (
 )
 
 func daemonSet(dSet appsv1.DaemonSet) *ResourceUsage {
-	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&dSet.Spec.Template.Spec)
+	podResources := podResources(&dSet.Spec.Template.Spec)
 
 	resourceUsage := ResourceUsage{
-		CPUMin:    cpuMin,
-		CPUMax:    cpuMax,
-		MemoryMin: memoryMin,
-		MemoryMax: memoryMax,
+		resources: *podResources,
 		Details: Details{
 			Version:     dSet.APIVersion,
 			Kind:        dSet.Kind,

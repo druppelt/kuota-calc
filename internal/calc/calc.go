@@ -45,10 +45,7 @@ func (cErr CalculationError) Unwrap() error {
 
 // ResourceUsage summarizes the usage of compute resources for a k8s resource.
 type ResourceUsage struct {
-	CPUMin    *resource.Quantity
-	CPUMax    *resource.Quantity
-	MemoryMin *resource.Quantity
-	MemoryMax *resource.Quantity
+	resources Resources
 	Details   Details
 }
 
@@ -63,28 +60,60 @@ type Details struct {
 	MaxReplicas int32
 }
 
-func podResources(podSpec *v1.PodSpec) (cpuMin, cpuMax, memoryMin, memoryMax *resource.Quantity) {
-	cpuMin = new(resource.Quantity)
-	cpuMax = new(resource.Quantity)
-	memoryMin = new(resource.Quantity)
-	memoryMax = new(resource.Quantity)
+type Resources struct {
+	CPUMin    resource.Quantity
+	CPUMax    resource.Quantity
+	MemoryMin resource.Quantity
+	MemoryMax resource.Quantity
+}
+
+func ConvertToResources(req *v1.ResourceRequirements) Resources {
+	return Resources{
+		CPUMin:    *req.Requests.Cpu(),
+		CPUMax:    *req.Limits.Cpu(),
+		MemoryMin: *req.Requests.Memory(),
+		MemoryMax: *req.Limits.Memory(),
+	}
+}
+
+// Add adds the provided y resources to the current value.
+func (r Resources) Add(y Resources) Resources {
+	r.CPUMin.Add(y.CPUMin)
+	r.CPUMax.Add(y.CPUMax)
+	r.MemoryMin.Add(y.MemoryMin)
+	r.MemoryMax.Add(y.MemoryMax)
+	return r
+}
+
+// Mul multiplies all resource values by the given multiplier.
+func (r Resources) Mul(y float64) Resources {
+	// TODO check if overflow issues due to milli instead of value are to be expected
+	r.CPUMin.SetMilli(int64(float64(r.CPUMin.MilliValue()) * y))
+	r.CPUMax.SetMilli(int64(float64(r.CPUMax.MilliValue()) * y))
+	r.MemoryMin.SetMilli(int64(float64(r.MemoryMin.MilliValue()) * y))
+	r.MemoryMax.SetMilli(int64(float64(r.MemoryMax.MilliValue()) * y))
+	return r
+}
+
+func podResources(podSpec *v1.PodSpec) (r *Resources) {
+	r = new(Resources)
 
 	for i := range podSpec.Containers {
 		container := podSpec.Containers[i]
 
-		cpuMin.Add(*container.Resources.Requests.Cpu())
-		cpuMax.Add(*container.Resources.Limits.Cpu())
-		memoryMin.Add(*container.Resources.Requests.Memory())
-		memoryMax.Add(*container.Resources.Limits.Memory())
+		r.CPUMin.Add(*container.Resources.Requests.Cpu())
+		r.CPUMax.Add(*container.Resources.Limits.Cpu())
+		r.MemoryMin.Add(*container.Resources.Requests.Memory())
+		r.MemoryMax.Add(*container.Resources.Limits.Memory())
 	}
 
 	for i := range podSpec.InitContainers {
 		container := podSpec.InitContainers[i]
 
-		cpuMin.Add(*container.Resources.Requests.Cpu())
-		cpuMax.Add(*container.Resources.Limits.Cpu())
-		memoryMin.Add(*container.Resources.Requests.Memory())
-		memoryMax.Add(*container.Resources.Limits.Memory())
+		r.CPUMin.Add(*container.Resources.Requests.Cpu())
+		r.CPUMax.Add(*container.Resources.Limits.Cpu())
+		r.MemoryMin.Add(*container.Resources.Requests.Memory())
+		r.MemoryMax.Add(*container.Resources.Limits.Memory())
 	}
 
 	return

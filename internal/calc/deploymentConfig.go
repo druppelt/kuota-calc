@@ -5,7 +5,6 @@ import (
 	"math"
 
 	openshiftAppsV1 "github.com/openshift/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -22,10 +21,7 @@ func deploymentConfig(deploymentConfig openshiftAppsV1.DeploymentConfig) (*Resou
 
 	if replicas == 0 {
 		return &ResourceUsage{
-			CPUMin:    new(resource.Quantity),
-			CPUMax:    new(resource.Quantity),
-			MemoryMin: new(resource.Quantity),
-			MemoryMax: new(resource.Quantity),
+			resources: *new(Resources),
 			Details: Details{
 				Version:     deploymentConfig.APIVersion,
 				Kind:        deploymentConfig.Kind,
@@ -96,24 +92,12 @@ func deploymentConfig(deploymentConfig openshiftAppsV1.DeploymentConfig) (*Resou
 		return nil, fmt.Errorf("deploymentConfig: %s deploymentConfig strategy %q is unknown", deploymentConfig.Name, strategy.Type)
 	}
 
-	cpuMin, cpuMax, memoryMin, memoryMax := podResources(&deploymentConfig.Spec.Template.Spec)
-	strategyResources := &deploymentConfig.Spec.Strategy.Resources
-
-	memMin := float64(memoryMin.Value())*float64(replicas)*resourceOverhead + float64(strategyResources.Requests.Memory().Value())
-	memoryMin.Set(int64(math.Round(memMin)))
-
-	memMax := float64(memoryMax.Value())*float64(replicas)*resourceOverhead + float64(strategyResources.Limits.Memory().Value())
-	memoryMax.Set(int64(math.Round(memMax)))
-
-	cpuMin.SetMilli(int64(math.Round(float64(cpuMin.MilliValue())*float64(replicas)*resourceOverhead)) + strategyResources.Requests.Cpu().MilliValue())
-
-	cpuMax.SetMilli(int64(math.Round(float64(cpuMax.MilliValue())*float64(replicas)*resourceOverhead)) + strategyResources.Limits.Cpu().MilliValue())
+	podResources := podResources(&deploymentConfig.Spec.Template.Spec)
+	strategyResources := ConvertToResources(&deploymentConfig.Spec.Strategy.Resources)
+	newResources := (*podResources).Mul(float64(replicas)).Mul(resourceOverhead).Add(strategyResources)
 
 	resourceUsage := ResourceUsage{
-		CPUMin:    cpuMin,
-		CPUMax:    cpuMax,
-		MemoryMin: memoryMin,
-		MemoryMax: memoryMax,
+		resources: newResources,
 		Details: Details{
 			Version:     deploymentConfig.APIVersion,
 			Kind:        deploymentConfig.Kind,
