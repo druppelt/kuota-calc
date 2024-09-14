@@ -1,6 +1,7 @@
 package calc
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -10,10 +11,10 @@ import (
 
 // calculates the cpu/memory resources a single deployment needs. Replicas and the deployment
 // strategy are taken into account.
-func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
+func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) { //nolint:funlen // disable function length linting
 	var (
-		resourceOverhead float64 // max overhead compute resources (percent)
-		podOverhead      int32   // max overhead pods during deployment
+		maxUnavailable int32 // max amount of unavailable pods during a deployment
+		maxSurge       int32 // max amount of pods that are allowed in addition to replicas during deployment
 	)
 
 	replicas := deployment.Spec.Replicas
@@ -35,9 +36,9 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 
 	switch strategy.Type {
 	case appsv1.RecreateDeploymentStrategyType:
-		// no overhead on recreate
-		resourceOverhead = 1
-		podOverhead = 0
+		// kill all existing pods, then recreate new ones at once -> no overhead on recreate
+		maxUnavailable = *replicas
+		maxSurge = 0
 	case "":
 		// RollingUpdate is the default and can be an empty string. If so, set the defaults
 		// (https://pkg.go.dev/k8s.io/api/apps/v1?tab=doc#RollingUpdateDeployment) and continue calculation.
@@ -69,31 +70,37 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 		}
 
 		// docs say, that the absolute number is calculated by rounding down.
-		maxUnavailable, err := intstr.GetScaledValueFromIntOrPercent(&maxUnavailableValue, int(*replicas), false)
+		maxUnavailableInt, err := intstr.GetScaledValueFromIntOrPercent(&maxUnavailableValue, int(*replicas), false)
 		if err != nil {
 			return nil, err
 		}
+
+		if maxUnavailableInt < math.MinInt32 || maxUnavailableInt > math.MaxInt32 {
+			return nil, errors.New("maxUnavailableInt out of int32 boundaries")
+		}
+
+		maxUnavailable = int32(maxUnavailableInt)
 
 		// docs say, absolute number is calculated by rounding up.
-		maxSurge, err := intstr.GetScaledValueFromIntOrPercent(&maxSurgeValue, int(*replicas), true)
+		maxSurgeInt, err := intstr.GetScaledValueFromIntOrPercent(&maxSurgeValue, int(*replicas), true)
 		if err != nil {
 			return nil, err
 		}
 
-		// podOverhead is the number of pods which can run more during a deployment
-		podOverheadInt := maxSurge - maxUnavailable
-		if podOverheadInt > math.MaxInt32 || podOverheadInt < math.MinInt32 {
-			return nil, fmt.Errorf("deployment: %s maxSurge - maxUnavailable (%d-%d) was out of bounds for int32", deployment.Name, maxSurge, maxUnavailable)
+		if maxSurgeInt < math.MinInt32 || maxSurgeInt > math.MaxInt32 {
+			return nil, errors.New("maxSurgeInt out of int32 boundaries")
 		}
-		podOverhead = int32(podOverheadInt) //nolint:gosec,wsl // gosec doesn't understand that the int conversion is already guarded, wsl wants to group the assignment with the next block
 
-		resourceOverhead = (float64(podOverhead) / float64(*replicas)) + 1
+		maxSurge = int32(maxSurgeInt)
+
 	default:
 		return nil, fmt.Errorf("deployment: %s deployment strategy %q is unknown", deployment.Name, strategy.Type)
 	}
 
+	_ = maxUnavailable // fix complaining compiler. will need this field in the future
+
 	podResources := podResources(&deployment.Spec.Template.Spec)
-	newResources := podResources.Mul(float64(*replicas)).Mul(resourceOverhead)
+	newResources := podResources.Mul(float64(*replicas + maxSurge))
 
 	resourceUsage := ResourceUsage{
 		Resources: newResources,
@@ -103,7 +110,7 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) {
 			Name:        deployment.Name,
 			Replicas:    *replicas,
 			Strategy:    string(strategy.Type),
-			MaxReplicas: *replicas + podOverhead,
+			MaxReplicas: *replicas + maxSurge,
 		},
 	}
 

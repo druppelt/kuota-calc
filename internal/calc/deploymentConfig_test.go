@@ -23,12 +23,12 @@ func TestDeploymentConfig(t *testing.T) {
 		{
 			name:             "normal deploymentConfig",
 			deploymentConfig: normalDeploymentConfig,
-			cpuMin:           resource.MustParse("2750m"),
-			cpuMax:           resource.MustParse("5500m"),
-			memoryMin:        resource.MustParse("22Gi"),
-			memoryMax:        resource.MustParse("44Gi"),
+			cpuMin:           resource.MustParse("3250m"),
+			cpuMax:           resource.MustParse("6500m"),
+			memoryMin:        resource.MustParse("26Gi"),
+			memoryMax:        resource.MustParse("52Gi"),
 			replicas:         10,
-			maxReplicas:      11,
+			maxReplicas:      13,
 			strategy:         openshiftAppsV1.DeploymentStrategyTypeRolling,
 		},
 		//TODO add more tests
