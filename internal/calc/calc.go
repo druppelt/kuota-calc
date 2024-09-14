@@ -69,6 +69,15 @@ type Resources struct {
 	MemoryMax resource.Quantity
 }
 
+// PodResources contain the sum of the resources required by the initContainer, the normal containers
+// and the maximum the pod can require at any time for each resource quantity.
+// In other words, max(Containers.MinCPU, InitContainers.MinCPU), max(Containers.MaxCPU, InitContainers.MaxCPU), etc.
+type PodResources struct {
+	Containers     Resources
+	InitContainers Resources
+	MaxResources   Resources
+}
+
 // ConvertToResources converts a kubernetes/openshift ResourceRequirements struct to a Resources struct
 func ConvertToResources(req *v1.ResourceRequirements) Resources {
 	return Resources{
@@ -89,6 +98,11 @@ func (r Resources) Add(y Resources) Resources {
 	return r
 }
 
+// MulInt32 multiplies all resource values by the given multiplier.
+func (r Resources) MulInt32(y int32) Resources {
+	return r.Mul(float64(y))
+}
+
 // Mul multiplies all resource values by the given multiplier.
 func (r Resources) Mul(y float64) Resources {
 	// TODO check if overflow issues due to milli instead of value are to be expected
@@ -100,33 +114,47 @@ func (r Resources) Mul(y float64) Resources {
 	return r
 }
 
-func podResources(podSpec *v1.PodSpec) (r *Resources) {
-	r = new(Resources)
+func calcPodResources(podSpec *v1.PodSpec) (r *PodResources) {
+	r = new(PodResources)
 
 	for i := range podSpec.Containers {
 		container := podSpec.Containers[i]
 
-		r.CPUMin.Add(*container.Resources.Requests.Cpu())
-		r.CPUMax.Add(*container.Resources.Limits.Cpu())
-		r.MemoryMin.Add(*container.Resources.Requests.Memory())
-		r.MemoryMax.Add(*container.Resources.Limits.Memory())
+		r.Containers.CPUMin.Add(*container.Resources.Requests.Cpu())
+		r.Containers.CPUMax.Add(*container.Resources.Limits.Cpu())
+		r.Containers.MemoryMin.Add(*container.Resources.Requests.Memory())
+		r.Containers.MemoryMax.Add(*container.Resources.Limits.Memory())
 	}
 
 	for i := range podSpec.InitContainers {
 		container := podSpec.InitContainers[i]
 
-		r.CPUMin.Add(*container.Resources.Requests.Cpu())
-		r.CPUMax.Add(*container.Resources.Limits.Cpu())
-		r.MemoryMin.Add(*container.Resources.Requests.Memory())
-		r.MemoryMax.Add(*container.Resources.Limits.Memory())
+		r.InitContainers.CPUMin.Add(*container.Resources.Requests.Cpu())
+		r.InitContainers.CPUMax.Add(*container.Resources.Limits.Cpu())
+		r.InitContainers.MemoryMin.Add(*container.Resources.Requests.Memory())
+		r.InitContainers.MemoryMax.Add(*container.Resources.Limits.Memory())
 	}
 
+	r.MaxResources.CPUMin = maxQuantity(r.Containers.CPUMin, r.InitContainers.CPUMin)
+	r.MaxResources.CPUMax = maxQuantity(r.Containers.CPUMax, r.InitContainers.CPUMax)
+	r.MaxResources.MemoryMin = maxQuantity(r.Containers.MemoryMin, r.InitContainers.MemoryMin)
+	r.MaxResources.MemoryMax = maxQuantity(r.Containers.MemoryMax, r.InitContainers.MemoryMax)
+
 	return
+}
+
+func maxQuantity(q1, q2 resource.Quantity) resource.Quantity {
+	if q1.MilliValue() > q2.MilliValue() {
+		return q1
+	}
+
+	return q2
 }
 
 // ResourceQuotaFromYaml decodes a single yaml document into a k8s object. Then performs a type assertion
 // on the object and calculates the resource needs of it.
 // Currently supported:
+// * apps.openshift.io/v1 - DeploymentConfig
 // * apps/v1 - Deployment
 // * apps/v1 - StatefulSet
 // * apps/v1 - DaemonSet
@@ -189,7 +217,16 @@ func ResourceQuotaFromYaml(yamlData []byte) (*ResourceUsage, error) {
 
 		return usage, nil
 	case *appsv1.StatefulSet:
-		return statefulSet(*obj), nil
+		usage, err := statefulSet(*obj)
+		if err != nil {
+			return nil, CalculationError{
+				Version: gvk.Version,
+				Kind:    gvk.Kind,
+				err:     err,
+			}
+		}
+
+		return usage, nil
 	case *appsv1.DaemonSet:
 		return daemonSet(*obj), nil
 	case *batchV1.Job:

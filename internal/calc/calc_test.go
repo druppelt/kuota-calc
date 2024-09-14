@@ -2,8 +2,9 @@ package calc
 
 import (
 	"errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/stretchr/testify/require"
 )
@@ -536,6 +537,138 @@ metadata:
     app: mypod
   name: mypod
 spec:
+  containers:
+  - image: mypod
+    imagePullPolicy: Always
+    name: myapp
+    resources:
+      limits:
+        cpu: "1"
+        memory: 4Gi
+      requests:
+        cpu: 250m
+        memory: 2Gi
+  terminationGracePeriodSeconds: 30`
+
+var multiContainerPod = `
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: mypod
+  name: mypod
+spec:
+  containers:
+  - image: mypod
+    imagePullPolicy: Always
+    name: myapp
+    resources:
+      limits:
+        cpu: "1"
+        memory: 4Gi
+      requests:
+        cpu: 250m
+        memory: 2Gi
+  - image: mypod2
+    imagePullPolicy: Always
+    name: myapp2
+    resources:
+      limits:
+        cpu: "750m"
+        memory: 3Gi
+      requests:
+        cpu: 150m
+        memory: 1Gi
+  terminationGracePeriodSeconds: 30`
+
+var initContainerPod = `
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: mypod
+  name: mypod
+spec:
+  initContainers:
+  - image: mypod
+    imagePullPolicy: Always
+    name: myapp
+    resources:
+      limits:
+        cpu: "500m"
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 1Gi
+  containers:
+  - image: mypod
+    imagePullPolicy: Always
+    name: myapp
+    resources:
+      limits:
+        cpu: "1"
+        memory: 4Gi
+      requests:
+        cpu: 250m
+        memory: 2Gi
+  terminationGracePeriodSeconds: 30`
+
+var bigInitContainerPod = `
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: mypod
+  name: mypod
+spec:
+  initContainers:
+  - image: mypod
+    imagePullPolicy: Always
+    name: myapp
+    resources:
+      limits:
+        cpu: "2"
+        memory: 5Gi
+      requests:
+        cpu: 1
+        memory: 3Gi
+  containers:
+  - image: mypod
+    imagePullPolicy: Always
+    name: myapp
+    resources:
+      limits:
+        cpu: "1"
+        memory: 4Gi
+      requests:
+        cpu: 250m
+        memory: 2Gi
+  terminationGracePeriodSeconds: 30`
+
+// the idea here is that for some resources init is bigger and for other the normal container is bigger
+var mediumInitContainerPod = `
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: mypod
+  name: mypod
+spec:
+  initContainers:
+  - image: mypod
+    imagePullPolicy: Always
+    name: myapp
+    resources:
+      limits:
+        cpu: "2"
+        memory: 3Gi
+      requests:
+        cpu: 100m
+        memory: 3Gi
   containers:
   - image: mypod
     imagePullPolicy: Always

@@ -13,8 +13,11 @@ import (
 // strategy are taken into account.
 func deploymentConfig(deploymentConfig openshiftAppsV1.DeploymentConfig) (*ResourceUsage, error) { //nolint:funlen // disable function length linting
 	var (
-		maxUnavailable int32 // max amount of unavailable pods during a deployment
-		maxSurge       int32 // max amount of pods that are allowed in addition to replicas during deployment
+		maxUnavailable      int32 // max amount of unavailable pods during a deployment
+		maxSurge            int32 // max amount of pods that are allowed in addition to replicas during deployment
+		maxNonReadyPodCount int32 // max pods that are not ready during deployment,
+		//  so either running init containers or already running normal containers,
+		//  but probes haven't succeeded yet
 	)
 
 	replicas := deploymentConfig.Spec.Replicas
@@ -37,6 +40,7 @@ func deploymentConfig(deploymentConfig openshiftAppsV1.DeploymentConfig) (*Resou
 	switch strategy.Type {
 	case openshiftAppsV1.DeploymentStrategyTypeRecreate:
 		// kill all existing pods, then recreate new ones at once -> no overhead on recreate
+		maxNonReadyPodCount = replicas
 		maxUnavailable = replicas
 		maxSurge = 0
 	case "":
@@ -92,15 +96,16 @@ func deploymentConfig(deploymentConfig openshiftAppsV1.DeploymentConfig) (*Resou
 		}
 
 		maxSurge = int32(maxSurgeInt)
+
+		// maxNonReadyPodCount is the max number of pods potentially in init phase during a deployment
+		maxNonReadyPodCount = maxSurge + maxUnavailable
 	default:
 		return nil, fmt.Errorf("deploymentConfig: %s deploymentConfig strategy %q is unknown", deploymentConfig.Name, strategy.Type)
 	}
 
-	_ = maxUnavailable // fix complaining compiler. will need this field in the future
-
-	podResources := podResources(&deploymentConfig.Spec.Template.Spec)
+	podResources := calcPodResources(&deploymentConfig.Spec.Template.Spec)
 	strategyResources := ConvertToResources(&deploymentConfig.Spec.Strategy.Resources)
-	newResources := podResources.Mul(float64(replicas + maxSurge)).Add(strategyResources)
+	newResources := podResources.Containers.MulInt32(replicas - maxUnavailable).Add(podResources.MaxResources.MulInt32(maxNonReadyPodCount)).Add(strategyResources)
 
 	resourceUsage := ResourceUsage{
 		Resources: newResources,

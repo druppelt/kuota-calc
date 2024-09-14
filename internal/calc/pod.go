@@ -3,10 +3,10 @@ package calc
 import v1 "k8s.io/api/core/v1"
 
 func pod(pod v1.Pod) *ResourceUsage {
-	podResources := podResources(&pod.Spec)
+	podResources := calcPodResources(&pod.Spec).MaxResources
 
 	resourceUsage := ResourceUsage{
-		Resources: *podResources,
+		Resources: podResources,
 		Details: Details{
 			Version:     pod.APIVersion,
 			Kind:        pod.Kind,

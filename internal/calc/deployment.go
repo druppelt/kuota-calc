@@ -13,8 +13,11 @@ import (
 // strategy are taken into account.
 func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) { //nolint:funlen // disable function length linting
 	var (
-		maxUnavailable int32 // max amount of unavailable pods during a deployment
-		maxSurge       int32 // max amount of pods that are allowed in addition to replicas during deployment
+		maxUnavailable      int32 // max amount of unavailable pods during a deployment
+		maxSurge            int32 // max amount of pods that are allowed in addition to replicas during deployment
+		maxNonReadyPodCount int32 // max pods that are not ready during deployment,
+		//  so either running init containers or already running normal containers,
+		//  but probes haven't succeeded yet
 	)
 
 	replicas := deployment.Spec.Replicas
@@ -37,6 +40,7 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) { //nolint
 	switch strategy.Type {
 	case appsv1.RecreateDeploymentStrategyType:
 		// kill all existing pods, then recreate new ones at once -> no overhead on recreate
+		maxNonReadyPodCount = *replicas
 		maxUnavailable = *replicas
 		maxSurge = 0
 	case "":
@@ -93,14 +97,14 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) { //nolint
 
 		maxSurge = int32(maxSurgeInt)
 
+		// maxNonReadyPodCount is the max number of pods potentially in init phase during a deployment
+		maxNonReadyPodCount = maxSurge + maxUnavailable
 	default:
 		return nil, fmt.Errorf("deployment: %s deployment strategy %q is unknown", deployment.Name, strategy.Type)
 	}
 
-	_ = maxUnavailable // fix complaining compiler. will need this field in the future
-
-	podResources := podResources(&deployment.Spec.Template.Spec)
-	newResources := podResources.Mul(float64(*replicas + maxSurge))
+	podResources := calcPodResources(&deployment.Spec.Template.Spec)
+	newResources := podResources.Containers.MulInt32(*replicas - maxUnavailable).Add(podResources.MaxResources.MulInt32(maxNonReadyPodCount))
 
 	resourceUsage := ResourceUsage{
 		Resources: newResources,

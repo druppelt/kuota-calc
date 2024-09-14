@@ -21,11 +21,44 @@ func TestPod(t *testing.T) {
 		strategy    appsv1.StatefulSetUpdateStrategyType
 	}{
 		{
-			name:      "ok",
+			name:      "normal pod",
 			pod:       normalPod,
 			cpuMin:    resource.MustParse("250m"),
 			cpuMax:    resource.MustParse("1"),
 			memoryMin: resource.MustParse("2Gi"),
+			memoryMax: resource.MustParse("4Gi"),
+		},
+		{
+			name:      "pod with multiple containers",
+			pod:       multiContainerPod,
+			cpuMin:    resource.MustParse("400m"),
+			cpuMax:    resource.MustParse("1750m"),
+			memoryMin: resource.MustParse("3Gi"),
+			memoryMax: resource.MustParse("7Gi"),
+		},
+		{
+			name:      "pod with small init container",
+			pod:       initContainerPod,
+			cpuMin:    resource.MustParse("250m"),
+			cpuMax:    resource.MustParse("1"),
+			memoryMin: resource.MustParse("2Gi"),
+			memoryMax: resource.MustParse("4Gi"),
+		},
+		{
+			name:      "pod with big init container",
+			pod:       bigInitContainerPod,
+			cpuMin:    resource.MustParse("1"),
+			cpuMax:    resource.MustParse("2"),
+			memoryMin: resource.MustParse("3Gi"),
+			memoryMax: resource.MustParse("5Gi"),
+		},
+		{
+			// This testcase is for taking the max of init and normal containers for each resource
+			name:      "pod with a similar sized init container to the normal containers",
+			pod:       mediumInitContainerPod,
+			cpuMin:    resource.MustParse("250m"),
+			cpuMax:    resource.MustParse("2"),
+			memoryMin: resource.MustParse("3Gi"),
 			memoryMax: resource.MustParse("4Gi"),
 		},
 	}
