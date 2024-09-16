@@ -4,6 +4,7 @@ package calc
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	openshiftAppsV1 "github.com/openshift/api/apps/v1"
 	openshiftScheme "github.com/openshift/client-go/apps/clientset/versioned/scheme"
@@ -45,8 +46,9 @@ func (cErr CalculationError) Unwrap() error {
 
 // ResourceUsage summarizes the usage of compute resources for a k8s resource.
 type ResourceUsage struct {
-	Resources Resources
-	Details   Details
+	NormalResources  Resources
+	RolloutResources Resources
+	Details          Details
 }
 
 // Details contains a few details of a k8s resource, which are needed to generate a detailed resource
@@ -149,6 +151,89 @@ func maxQuantity(q1, q2 resource.Quantity) resource.Quantity {
 	}
 
 	return q2
+}
+
+// diffQuantities is just higher-lower returned as a new Quantity
+func diffQuantities(higher, lower *resource.Quantity) resource.Quantity {
+	q := higher.DeepCopy()
+	q.Sub(*lower)
+
+	return q
+}
+
+// Total calculates the sum of all usages. maxRollout limits how many simultaneous rollouts are assumed.
+// Negative maxRollout value -> unlimited rollouts.
+func Total(maxRollout int, usage []*ResourceUsage) Resources {
+	var (
+		cpuMinUsage    resource.Quantity
+		cpuMaxUsage    resource.Quantity
+		memoryMinUsage resource.Quantity
+		memoryMaxUsage resource.Quantity
+	)
+
+	if maxRollout <= -1 {
+		// unlimited simultaneous rollout, just sum all rollout resources
+		for _, u := range usage {
+			cpuMinUsage.Add(u.RolloutResources.CPUMin)
+			cpuMaxUsage.Add(u.RolloutResources.CPUMax)
+			memoryMinUsage.Add(u.RolloutResources.MemoryMin)
+			memoryMaxUsage.Add(u.RolloutResources.MemoryMax)
+		}
+	} else {
+		// limited simultaneous rollout
+		// first sum the normal resources
+		// then search for the highest diffs between normal and rollout and add the top `opts.maxRollout` to the sums.
+		for _, u := range usage {
+			cpuMinUsage.Add(u.NormalResources.CPUMin)
+			cpuMaxUsage.Add(u.NormalResources.CPUMax)
+			memoryMinUsage.Add(u.NormalResources.MemoryMin)
+			memoryMaxUsage.Add(u.NormalResources.MemoryMax)
+		}
+
+		var cpuMinDiffs, cpuMaxDiffs, memoryMinDiffs, memoryMaxDiffs []resource.Quantity
+
+		for _, u := range usage {
+			cpuMinDiffs = append(cpuMinDiffs, diffQuantities(&u.RolloutResources.CPUMin, &u.NormalResources.CPUMin))
+
+			cpuMaxDiffs = append(cpuMaxDiffs, diffQuantities(&u.RolloutResources.CPUMax, &u.NormalResources.CPUMax))
+
+			memoryMinDiffs = append(memoryMinDiffs, diffQuantities(&u.RolloutResources.MemoryMin, &u.NormalResources.MemoryMin))
+
+			memoryMaxDiffs = append(memoryMaxDiffs, diffQuantities(&u.RolloutResources.MemoryMax, &u.NormalResources.MemoryMax))
+		}
+
+		compareQuantityDescending := func(a, b resource.Quantity) int {
+			return a.Cmp(b) * -1
+		}
+
+		slices.SortFunc(cpuMinDiffs, compareQuantityDescending)
+		slices.SortFunc(cpuMaxDiffs, compareQuantityDescending)
+		slices.SortFunc(memoryMinDiffs, compareQuantityDescending)
+		slices.SortFunc(memoryMaxDiffs, compareQuantityDescending)
+
+		for i := 0; i < len(cpuMinDiffs) && i < maxRollout; i++ {
+			cpuMinUsage.Add(cpuMinDiffs[i])
+		}
+
+		for i := 0; i < len(cpuMaxDiffs) && i < maxRollout; i++ {
+			cpuMaxUsage.Add(cpuMaxDiffs[i])
+		}
+
+		for i := 0; i < len(memoryMinDiffs) && i < maxRollout; i++ {
+			memoryMinUsage.Add(memoryMinDiffs[i])
+		}
+
+		for i := 0; i < len(memoryMaxDiffs) && i < maxRollout; i++ {
+			memoryMaxUsage.Add(memoryMaxDiffs[i])
+		}
+	}
+
+	return Resources{
+		CPUMin:    cpuMinUsage,
+		CPUMax:    cpuMaxUsage,
+		MemoryMin: memoryMinUsage,
+		MemoryMax: memoryMaxUsage,
+	}
 }
 
 // ResourceQuotaFromYaml decodes a single yaml document into a k8s object. Then performs a type assertion

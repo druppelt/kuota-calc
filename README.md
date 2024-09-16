@@ -12,25 +12,37 @@ Simple utility to calculate the maximum needed resource quota for deployment(s).
 deployment strategy, replicas and all containers into account, see [supported-resources](https://github.com/druppelt/kuota-calc#supported-k8s-resources) for a list of kubernetes resources which are currently supported by kuota-calc.
 
 ## Motivation
-In shared environments such as kubernetes it is always a good idea to isolate/constrain different workloads to prevent them from infering each other. Kubernetes provides [Resource Quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/) to limit compute, storage and object resources of namespaces.
+In shared environments such as kubernetes it is always a good idea to isolate/constrain different workloads to prevent them from interfering each other. Kubernetes provides [Resource Quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/) to limit compute, storage and object resources of namespaces.
 
 Calculating the needed compute resources can be a bit challenging (especially with large and complex deployments) because we must respect certain settings/defaults like the deployment strategy, number of replicas and so on. This is where kuota-calc can help you, it calculates the maximum needed resource quota in order to be able to start a deployment of all resources at the same time by respecting deployment strategies, replicas and so on.
 
 ## Example
+Get a detailed report of all resources, their max required quota and a total. 
 ```bash
 $ cat examples/deployment.yaml | kuota-calc -detailed
-Version    Kind           Name     Replicas    Strategy         MaxReplicas    CPURequest    CPULimit    MemoryRequest    MemoryLimit
-apps/v1    Deployment     myapp    10          RollingUpdate    11             2750m         5500m       704Mi            2816Mi
-apps/v1    StatefulSet    myapp    3           RollingUpdate    3              750m          3           6Gi              12Gi
+Version    Kind           Name     Replicas    Strategy         MaxReplicas    CPURequest    CPULimit    MemoryRequest    MemoryLimit    
+apps/v1    Deployment     myapp    10          RollingUpdate    13             3250m         6500m       832Mi            3328Mi         
+apps/v1    StatefulSet    myapp    3           RollingUpdate    3              750m          3           6Gi              12Gi           
+
+Table and Total assuming simultaneous rollout of all resources
 
 Total
-CPU Request: 3500m
-CPU Limit: 8500m
-Memory Request: 6848Mi
-Memory Limit: 15104Mi
+CPU Request: 4
+CPU Limit: 9500m
+Memory Request: 6976Mi
+Memory Limit: 15616Mi
 ```
 
-To calc usage for deploymentConfigs, deployments and statefulSets deployed in openshift:
+For comparison, here the simultaneous rollout is limited to zero resources, so you get the required quotas to just run, but not deploy the applications. 
+````bash
+$ cat examples/deployment.yaml | kuota-calc --max-rollouts=0
+CPU Request: 3250m
+CPU Limit: 8
+Memory Request: 6784Mi
+Memory Limit: 14848Mi
+````
+
+To calc usage for deploymentConfigs, deployments and statefulSets deployed in an openshift cluster:
 ```bash
 $ oc get dc,sts,deploy -o json | yq -p=json -o=yaml '.items[] | split_doc' | kuota-calc --detailed
 Warning: apps.openshift.io/v1 DeploymentConfig is deprecated in v4.14+, unavailable in v4.10000+
@@ -52,7 +64,7 @@ Pre-compiled statically linked binaries are available on the [releases page](htt
 
 kuota-calc can either be used as a kubectl plugin or invoked directly. If you intend to use kuota-calc as
 a kubectl plugin, simply place the binary anywhere in `$PATH` named `kubectl-kuota_calc` with execute permissions.
-For further information, see the offical documentation on kubectl plugins [here](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/).
+For further information, see the official documentation on kubectl plugins [here](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/).
 
 **currently the kubectl plugin is not released for this fork**
 
@@ -68,3 +80,7 @@ Currently supported:
 - batch/v1 CronJob
 - batch/v1 Job
 - v1 Pod
+
+## known limitation
+- CronJobs: the cron concurrencyPolicy is not considered, a CronJob is treated as a single Pod (#18)
+- DaemonSet: neither node count nor UpdateStrategy are considered. Treated as a single Pod. (#21)

@@ -25,7 +25,8 @@ func deploymentConfig(deploymentConfig openshiftAppsV1.DeploymentConfig) (*Resou
 
 	if replicas == 0 {
 		return &ResourceUsage{
-			Resources: Resources{},
+			NormalResources:  Resources{},
+			RolloutResources: Resources{},
 			Details: Details{
 				Version:     deploymentConfig.APIVersion,
 				Kind:        deploymentConfig.Kind,
@@ -105,10 +106,12 @@ func deploymentConfig(deploymentConfig openshiftAppsV1.DeploymentConfig) (*Resou
 
 	podResources := calcPodResources(&deploymentConfig.Spec.Template.Spec)
 	strategyResources := ConvertToResources(&deploymentConfig.Spec.Strategy.Resources)
-	newResources := podResources.Containers.MulInt32(replicas - maxUnavailable).Add(podResources.MaxResources.MulInt32(maxNonReadyPodCount)).Add(strategyResources)
+	rolloutResources := podResources.Containers.MulInt32(replicas - maxUnavailable).Add(podResources.MaxResources.MulInt32(maxNonReadyPodCount)).Add(strategyResources)
+	normalResources := podResources.Containers.MulInt32(replicas)
 
 	resourceUsage := ResourceUsage{
-		Resources: newResources,
+		NormalResources:  normalResources,
+		RolloutResources: rolloutResources,
 		Details: Details{
 			Version:     deploymentConfig.APIVersion,
 			Kind:        deploymentConfig.Kind,

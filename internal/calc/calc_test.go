@@ -734,3 +734,104 @@ func TestResourceQuotaFromYaml(t *testing.T) {
 func AssertEqualQuantities(r *require.Assertions, expected resource.Quantity, actual resource.Quantity, name string) {
 	r.Conditionf(func() bool { return expected.Equal(actual) }, name+" expected: "+expected.String()+" but was: "+actual.String())
 }
+
+func TestTotal(t *testing.T) {
+	var tests = []struct {
+		name              string
+		maxRollout        int
+		usages            []*ResourceUsage
+		expectedResources Resources
+	}{
+		{
+			name:       "two resources, unlimited rollouts",
+			maxRollout: -1,
+			usages: []*ResourceUsage{
+				{
+					NormalResources: Resources{
+						CPUMin:    resource.MustParse("100m"),
+						CPUMax:    resource.MustParse("200m"),
+						MemoryMin: resource.MustParse("100Mi"),
+						MemoryMax: resource.MustParse("200Mi"),
+					},
+					RolloutResources: Resources{
+						CPUMin:    resource.MustParse("200m"),
+						CPUMax:    resource.MustParse("400m"),
+						MemoryMin: resource.MustParse("200Mi"),
+						MemoryMax: resource.MustParse("400Mi"),
+					},
+				},
+				{
+					NormalResources: Resources{
+						CPUMin:    resource.MustParse("50m"),
+						CPUMax:    resource.MustParse("100m"),
+						MemoryMin: resource.MustParse("50Mi"),
+						MemoryMax: resource.MustParse("100Mi"),
+					},
+					RolloutResources: Resources{
+						CPUMin:    resource.MustParse("100m"),
+						CPUMax:    resource.MustParse("200m"),
+						MemoryMin: resource.MustParse("100Mi"),
+						MemoryMax: resource.MustParse("200Mi"),
+					},
+				},
+			},
+			expectedResources: Resources{
+				CPUMin:    resource.MustParse("300m"),
+				CPUMax:    resource.MustParse("600m"),
+				MemoryMin: resource.MustParse("300Mi"),
+				MemoryMax: resource.MustParse("600Mi"),
+			},
+		},
+		{
+			name:       "two resources, one rollouts",
+			maxRollout: 1,
+			usages: []*ResourceUsage{
+				{
+					NormalResources: Resources{
+						CPUMin:    resource.MustParse("100m"),
+						CPUMax:    resource.MustParse("200m"),
+						MemoryMin: resource.MustParse("100Mi"),
+						MemoryMax: resource.MustParse("200Mi"),
+					},
+					RolloutResources: Resources{
+						CPUMin:    resource.MustParse("200m"),
+						CPUMax:    resource.MustParse("400m"),
+						MemoryMin: resource.MustParse("200Mi"),
+						MemoryMax: resource.MustParse("400Mi"),
+					},
+				},
+				{
+					NormalResources: Resources{
+						CPUMin:    resource.MustParse("50m"),
+						CPUMax:    resource.MustParse("100m"),
+						MemoryMin: resource.MustParse("50Mi"),
+						MemoryMax: resource.MustParse("100Mi"),
+					},
+					RolloutResources: Resources{
+						CPUMin:    resource.MustParse("100m"),
+						CPUMax:    resource.MustParse("200m"),
+						MemoryMin: resource.MustParse("100Mi"),
+						MemoryMax: resource.MustParse("200Mi"),
+					},
+				},
+			},
+			expectedResources: Resources{
+				CPUMin:    resource.MustParse("250m"),
+				CPUMax:    resource.MustParse("500m"),
+				MemoryMin: resource.MustParse("250Mi"),
+				MemoryMax: resource.MustParse("500Mi"),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			r := require.New(t)
+			total := Total(test.maxRollout, test.usages)
+			AssertEqualQuantities(r, test.expectedResources.CPUMin, total.CPUMin, "cpu request value")
+			AssertEqualQuantities(r, test.expectedResources.CPUMax, total.CPUMax, "cpu limit value")
+			AssertEqualQuantities(r, test.expectedResources.MemoryMin, total.MemoryMin, "memory request value")
+			AssertEqualQuantities(r, test.expectedResources.MemoryMax, total.MemoryMax, "memory limit value")
+		})
+	}
+}

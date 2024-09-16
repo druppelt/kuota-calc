@@ -66,10 +66,12 @@ func statefulSet(s appsv1.StatefulSet) (*ResourceUsage, error) {
 	}
 
 	podResources := calcPodResources(&s.Spec.Template.Spec)
-	newResources := podResources.Containers.MulInt32(replicas - maxUnavailable).Add(podResources.MaxResources.MulInt32(maxUnavailable))
+	rolloutResources := podResources.Containers.MulInt32(replicas - maxUnavailable).Add(podResources.MaxResources.MulInt32(maxUnavailable))
+	normalResources := podResources.Containers.MulInt32(replicas)
 
 	resourceUsage := ResourceUsage{
-		Resources: newResources,
+		NormalResources:  normalResources,
+		RolloutResources: rolloutResources,
 		Details: Details{
 			Version:     s.APIVersion,
 			Kind:        s.Kind,

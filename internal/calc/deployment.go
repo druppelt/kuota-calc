@@ -25,7 +25,8 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) { //nolint
 
 	if *replicas == 0 {
 		return &ResourceUsage{
-			Resources: Resources{},
+			NormalResources:  Resources{},
+			RolloutResources: Resources{},
 			Details: Details{
 				Version:     deployment.APIVersion,
 				Kind:        deployment.Kind,
@@ -104,10 +105,12 @@ func deployment(deployment appsv1.Deployment) (*ResourceUsage, error) { //nolint
 	}
 
 	podResources := calcPodResources(&deployment.Spec.Template.Spec)
-	newResources := podResources.Containers.MulInt32(*replicas - maxUnavailable).Add(podResources.MaxResources.MulInt32(maxNonReadyPodCount))
+	rolloutResources := podResources.Containers.MulInt32(*replicas - maxUnavailable).Add(podResources.MaxResources.MulInt32(maxNonReadyPodCount))
+	normalResources := podResources.Containers.MulInt32(*replicas)
 
 	resourceUsage := ResourceUsage{
-		Resources: newResources,
+		NormalResources:  normalResources,
+		RolloutResources: rolloutResources,
 		Details: Details{
 			Version:     deployment.APIVersion,
 			Kind:        deployment.Kind,

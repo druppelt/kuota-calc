@@ -11,7 +11,6 @@ import (
 
 	"github.com/druppelt/kuota-calc/internal/calc"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
@@ -29,9 +28,10 @@ type KuotaCalcOpts struct {
 	genericclioptions.IOStreams
 
 	// flags
-	debug    bool
-	detailed bool
-	version  bool
+	debug       bool
+	detailed    bool
+	version     bool
+	maxRollouts int
 	// files    []string
 
 	versionInfo *Version
@@ -61,6 +61,7 @@ func NewKuotaCalcCmd(version *Version, streams genericclioptions.IOStreams) *cob
 	cmd.Flags().BoolVar(&opts.debug, "debug", false, "enable debug logging")
 	cmd.Flags().BoolVar(&opts.detailed, "detailed", false, "enable detailed output")
 	cmd.Flags().BoolVar(&opts.version, "version", false, "print version and exit")
+	cmd.Flags().IntVar(&opts.maxRollouts, "max-rollouts", -1, "limit the simultaneous rollout to the n most expensive rollouts per resource")
 
 	return cmd
 }
@@ -131,15 +132,22 @@ func (opts *KuotaCalcOpts) printDetailed(usage []*calc.ResourceUsage) {
 			u.Details.Replicas,
 			u.Details.Strategy,
 			u.Details.MaxReplicas,
-			u.Resources.CPUMin.String(),
-			u.Resources.CPUMax.String(),
-			u.Resources.MemoryMin.String(),
-			u.Resources.MemoryMax.String(),
+			u.RolloutResources.CPUMin.String(),
+			u.RolloutResources.CPUMax.String(),
+			u.RolloutResources.MemoryMin.String(),
+			u.RolloutResources.MemoryMax.String(),
 		)
 	}
 
 	if err := w.Flush(); err != nil {
 		_, _ = fmt.Fprintf(opts.Out, "printing detailed resources to tabwriter failed: %v\n", err)
+	}
+
+	if opts.maxRollouts > -1 {
+		_, _ = fmt.Fprintf(opts.Out, "\nTable assuming simultaneous rollout of all resources\n")
+		_, _ = fmt.Fprintf(opts.Out, "Total assuming simultaneous rollout of %d resources\n", opts.maxRollouts)
+	} else {
+		_, _ = fmt.Fprintf(opts.Out, "\nTable and Total assuming simultaneous rollout of all resources\n")
 	}
 
 	_, _ = fmt.Fprintf(opts.Out, "\nTotal\n")
@@ -148,24 +156,12 @@ func (opts *KuotaCalcOpts) printDetailed(usage []*calc.ResourceUsage) {
 }
 
 func (opts *KuotaCalcOpts) printSummary(usage []*calc.ResourceUsage) {
-	var (
-		cpuMinUsage    resource.Quantity
-		cpuMaxUsage    resource.Quantity
-		memoryMinUsage resource.Quantity
-		memoryMaxUsage resource.Quantity
-	)
-
-	for _, u := range usage {
-		cpuMinUsage.Add(u.Resources.CPUMin)
-		cpuMaxUsage.Add(u.Resources.CPUMax)
-		memoryMinUsage.Add(u.Resources.MemoryMin)
-		memoryMaxUsage.Add(u.Resources.MemoryMax)
-	}
+	totalResources := calc.Total(opts.maxRollouts, usage)
 
 	_, _ = fmt.Fprintf(opts.Out, "CPU Request: %s\nCPU Limit: %s\nMemory Request: %s\nMemory Limit: %s\n",
-		cpuMinUsage.String(),
-		cpuMaxUsage.String(),
-		memoryMinUsage.String(),
-		memoryMaxUsage.String(),
+		totalResources.CPUMin.String(),
+		totalResources.CPUMax.String(),
+		totalResources.MemoryMin.String(),
+		totalResources.MemoryMax.String(),
 	)
 }
